@@ -323,7 +323,7 @@ const Template = () => {
         // Add new page for each question (except first)
         if (i > 0) {
           await addNewPage();
-          yPos = margin + 30;
+          yPos = margin + 32;
         }
         
         // Question header
@@ -339,7 +339,7 @@ const Template = () => {
         pdf.setTextColor(0, 0, 0);
         const descLines = pdf.splitTextToSize(questionData.description, pageWidth - 2 * margin);
         pdf.text(descLines, leftCol, yPos);
-        yPos += descLines.length * 4 + 5;
+        yPos += descLines.length * 4 + 4;
         
         // Core concept
         pdf.setFont('helvetica', 'bold');
@@ -352,10 +352,11 @@ const Template = () => {
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
         pdf.text('Student Code:', leftCol, yPos);
-        yPos += 6;
+        yPos += 5;
         
-        // Code box
-        const codeHeight = Math.max(40, Math.min(80, question.code.split('\n').length * 4 + 10));
+        // Code box - more accurate height calculation
+        const codeLineCount = question.code.split('\n').length;
+        const codeHeight = Math.max(40, Math.min(70, codeLineCount * 3 + 8));
         pdf.setLineWidth(0.3);
         pdf.rect(leftCol, yPos, pageWidth - 2 * margin, codeHeight);
         
@@ -364,13 +365,13 @@ const Template = () => {
         pdf.setFontSize(8);
         const codeLines = pdf.splitTextToSize(question.code, pageWidth - 2 * margin - 6);
         pdf.text(codeLines, leftCol + 3, yPos + 5);
-        yPos += codeHeight + 8;
+        yPos += codeHeight + 6;
         
         // Output section
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
         pdf.text('Output Screenshot:', leftCol, yPos);
-        yPos += 6;
+        yPos += 5;
         
         // Output image
         if (question.outputImage) {
@@ -379,13 +380,13 @@ const Template = () => {
             const imgWidth = Math.min(80, pageWidth - 2 * margin);
             const imgHeight = 40;
             pdf.addImage(outputImageData, 'PNG', leftCol, yPos, imgWidth, imgHeight);
-            yPos += imgHeight + 8;
+            yPos += imgHeight + 6;
           } catch (imgError) {
             // Fallback if image fails
             pdf.setFont('helvetica', 'italic');
             pdf.setFontSize(9);
             pdf.text('[Output image could not be displayed]', leftCol, yPos);
-            yPos += 8;
+            yPos += 6;
           }
         }
         
@@ -393,9 +394,10 @@ const Template = () => {
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
         pdf.text('Justification:', leftCol, yPos);
-        yPos += 6;
+        yPos += 5;
         
-        const justificationHeight = Math.max(25, Math.min(40, question.justification.split('\n').length * 4 + 10));
+        const justificationLineCount = question.justification.split('\n').length;
+        const justificationHeight = Math.max(25, Math.min(35, justificationLineCount * 4 + 10));
         pdf.setLineWidth(0.3);
         pdf.rect(leftCol, yPos, pageWidth - 2 * margin, justificationHeight);
         
@@ -403,89 +405,21 @@ const Template = () => {
         pdf.setFontSize(9);
         const justificationLines = pdf.splitTextToSize(question.justification, pageWidth - 2 * margin - 6);
         pdf.text(justificationLines, leftCol + 3, yPos + 5);
-        yPos += justificationHeight + 15;
-        
-        // Mark Rubrics for this question
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.text('Mark Rubrics:', leftCol, yPos);
-        yPos += 8;
-        
-        // Rubrics table
-        const rubrics = [
-          { criteria: 'Code Implementation', marks: '4', obtained: '' },
-          { criteria: 'Output Screenshot', marks: '2', obtained: '' },
-          { criteria: 'Justification', marks: '2', obtained: '' }
-        ];
-        
-        // Table headers
-        const colWidths = [80, 20, 30];
-        let currentX = leftCol;
-        
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        
-        // Headers
-        pdf.rect(currentX, yPos, colWidths[0], 8, 'S');
-        pdf.text('Criteria', currentX + 2, yPos + 5);
-        currentX += colWidths[0];
-        
-        pdf.rect(currentX, yPos, colWidths[1], 8, 'S');
-        pdf.text('Max', currentX + colWidths[1]/2, yPos + 5, { align: 'center' });
-        currentX += colWidths[1];
-        
-        pdf.rect(currentX, yPos, colWidths[2], 8, 'S');
-        pdf.text('Obtained', currentX + colWidths[2]/2, yPos + 5, { align: 'center' });
-        
-        yPos += 8;
-        
-        // Rubric rows
-        pdf.setFont('helvetica', 'normal');
-        rubrics.forEach(rubric => {
-          currentX = leftCol;
-          
-          pdf.rect(currentX, yPos, colWidths[0], 8, 'S');
-          pdf.text(rubric.criteria, currentX + 2, yPos + 5);
-          currentX += colWidths[0];
-          
-          pdf.rect(currentX, yPos, colWidths[1], 8, 'S');
-          pdf.text(rubric.marks, currentX + colWidths[1]/2, yPos + 5, { align: 'center' });
-          currentX += colWidths[1];
-          
-          pdf.rect(currentX, yPos, colWidths[2], 8, 'S');
-          // Empty box for marks to be filled by evaluator
-          
-          yPos += 8;
-        });
-        
-        // Question total
-        currentX = leftCol;
-        pdf.setFont('helvetica', 'bold');
-        pdf.rect(currentX, yPos, colWidths[0], 8, 'S');
-        pdf.text('Question Total', currentX + 2, yPos + 5);
-        currentX += colWidths[0];
-        
-        pdf.rect(currentX, yPos, colWidths[1], 8, 'S');
-        pdf.text('8', currentX + colWidths[1]/2, yPos + 5, { align: 'center' });
-        currentX += colWidths[1];
-        
-        pdf.rect(currentX, yPos, colWidths[2], 8, 'S');
-        
-        yPos += 15;
+        yPos += justificationHeight + 8;
       }
       
-      // Grand Total Page
+      // Comprehensive Rubrics Page
       await addNewPage();
-      yPos = margin + 30;
+      yPos = margin + 35;
       
-      // Grand Total Header
+      // Rubrics Header
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(16);
       pdf.setTextColor(0, 0, 139);
-      pdf.text('ASSIGNMENT SUMMARY', pageWidth / 2, yPos, { align: 'center' });
+      pdf.text('MARKING RUBRICS', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
       
-      // Student details summary
+      // Student details on rubrics page
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
@@ -499,115 +433,171 @@ const Template = () => {
       pdf.text('Roll No: ', pageWidth - margin - 60, yPos);
       pdf.setFont('helvetica', 'normal');
       pdf.text(formData.rollNo, pageWidth - margin - 35, yPos);
-      yPos += 15;
+      yPos += 20;
       
-      // Grand total table
+      // Comprehensive Rubrics Table for All Questions
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
-      pdf.text('MARKS SUMMARY', leftCol, yPos);
-      yPos += 10;
+      pdf.text('DETAILED MARKING CRITERIA', leftCol, yPos);
+      yPos += 12;
       
-      // Summary table headers
-      const summaryColWidths = [15, 60, 20, 30];
+      // Table structure: Question | Criteria | Max Marks | Obtained Marks
+      const rubricColWidths = [15, 90, 25, 30];
       let currentX = leftCol;
       
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
+      pdf.setFontSize(9);
       
-      pdf.rect(currentX, yPos, summaryColWidths[0], 10, 'S');
-      pdf.text('Q.No', currentX + summaryColWidths[0]/2, yPos + 6, { align: 'center' });
-      currentX += summaryColWidths[0];
+      // Table Headers
+      pdf.rect(currentX, yPos, rubricColWidths[0], 10, 'S');
+      pdf.text('Q.No', currentX + rubricColWidths[0]/2, yPos + 6.5, { align: 'center' });
+      currentX += rubricColWidths[0];
       
-      pdf.rect(currentX, yPos, summaryColWidths[1], 10, 'S');
-      pdf.text('Question Title', currentX + 2, yPos + 6);
-      currentX += summaryColWidths[1];
+      pdf.rect(currentX, yPos, rubricColWidths[1], 10, 'S');
+      pdf.text('Criteria', currentX + 2, yPos + 6.5);
+      currentX += rubricColWidths[1];
       
-      pdf.rect(currentX, yPos, summaryColWidths[2], 10, 'S');
-      pdf.text('Max', currentX + summaryColWidths[2]/2, yPos + 6, { align: 'center' });
-      currentX += summaryColWidths[2];
+      pdf.rect(currentX, yPos, rubricColWidths[2], 10, 'S');
+      pdf.text('Max', currentX + rubricColWidths[2]/2, yPos + 6.5, { align: 'center' });
+      currentX += rubricColWidths[2];
       
-      pdf.rect(currentX, yPos, summaryColWidths[3], 10, 'S');
-      pdf.text('Obtained', currentX + summaryColWidths[3]/2, yPos + 6, { align: 'center' });
+      pdf.rect(currentX, yPos, rubricColWidths[3], 10, 'S');
+      pdf.text('Obtained', currentX + rubricColWidths[3]/2, yPos + 6.5, { align: 'center' });
       
       yPos += 10;
       
-      // Question rows
+      // Add rubrics for each question
+      const rubricCriteria = [
+        'Code Implementation',
+        'Output Screenshot',
+        'Justification'
+      ];
+      const rubricMarks = [4, 2, 2];
+      
       pdf.setFont('helvetica', 'normal');
-      QUESTIONS.forEach((questionData, index) => {
+      
+      QUESTIONS.forEach((questionData, qIndex) => {
+        rubricCriteria.forEach((criteria, cIndex) => {
+          currentX = leftCol;
+          
+          // Question number (only show on first criteria row)
+          pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'S');
+          if (cIndex === 0) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text((qIndex + 1).toString(), currentX + rubricColWidths[0]/2, yPos + 5.5, { align: 'center' });
+            pdf.setFont('helvetica', 'normal');
+          }
+          currentX += rubricColWidths[0];
+          
+          // Criteria
+          pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'S');
+          pdf.text(criteria, currentX + 2, yPos + 5.5);
+          currentX += rubricColWidths[1];
+          
+          // Max marks
+          pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'S');
+          pdf.text(rubricMarks[cIndex].toString(), currentX + rubricColWidths[2]/2, yPos + 5.5, { align: 'center' });
+          currentX += rubricColWidths[2];
+          
+          // Obtained marks (empty for evaluator)
+          pdf.rect(currentX, yPos, rubricColWidths[3], 8, 'S');
+          
+          yPos += 8;
+        });
+        
+        // Question subtotal row
         currentX = leftCol;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setFillColor(240, 240, 240);
         
-        pdf.rect(currentX, yPos, summaryColWidths[0], 8, 'S');
-        pdf.text((index + 1).toString(), currentX + summaryColWidths[0]/2, yPos + 5, { align: 'center' });
-        currentX += summaryColWidths[0];
+        // Draw filled rectangles for first 3 columns
+        pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'F');
+        pdf.setLineWidth(0.3);
+        pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'S');
+        currentX += rubricColWidths[0];
         
-        pdf.rect(currentX, yPos, summaryColWidths[1], 8, 'S');
-        const titleText = pdf.splitTextToSize(questionData.title, summaryColWidths[1] - 4);
-        pdf.text(titleText[0], currentX + 2, yPos + 5);
-        currentX += summaryColWidths[1];
+        pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'F');
+        pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'S');
+        pdf.text(`Question ${qIndex + 1} Total`, currentX + 2, yPos + 5.5);
+        currentX += rubricColWidths[1];
         
-        pdf.rect(currentX, yPos, summaryColWidths[2], 8, 'S');
-        pdf.text('8', currentX + summaryColWidths[2]/2, yPos + 5, { align: 'center' });
-        currentX += summaryColWidths[2];
+        pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'F');
+        pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'S');
+        pdf.text('8', currentX + rubricColWidths[2]/2, yPos + 5.5, { align: 'center' });
+        currentX += rubricColWidths[2];
         
-        pdf.rect(currentX, yPos, summaryColWidths[3], 8, 'S');
-        // Empty box for obtained marks
+        // Last column - NO fill, stroke only
+        pdf.rect(currentX, yPos, rubricColWidths[3], 8, 'S');
         
+        pdf.setFont('helvetica', 'normal');
         yPos += 8;
       });
       
-      // Grand total row
+      // Grand Total Row
       currentX = leftCol;
       pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setFillColor(220, 220, 220);
       
-      pdf.rect(currentX, yPos, summaryColWidths[0] + summaryColWidths[1], 10, 'S');
-      pdf.text('GRAND TOTAL', currentX + 2, yPos + 6);
-      currentX += summaryColWidths[0] + summaryColWidths[1];
+      // Draw filled rectangle for first two columns combined
+      pdf.rect(currentX, yPos, rubricColWidths[0] + rubricColWidths[1], 12, 'F');
+      pdf.setLineWidth(0.3);
+      pdf.rect(currentX, yPos, rubricColWidths[0] + rubricColWidths[1], 12, 'S');
+      pdf.text('GRAND TOTAL', currentX + 5, yPos + 8);
+      currentX += rubricColWidths[0] + rubricColWidths[1];
       
-      pdf.rect(currentX, yPos, summaryColWidths[2], 10, 'S');
-      pdf.text('40', currentX + summaryColWidths[2]/2, yPos + 6, { align: 'center' });
-      currentX += summaryColWidths[2];
+      // Draw filled rectangle for max marks column
+      pdf.rect(currentX, yPos, rubricColWidths[2], 12, 'F');
+      pdf.rect(currentX, yPos, rubricColWidths[2], 12, 'S');
+      pdf.text('40', currentX + rubricColWidths[2]/2, yPos + 8, { align: 'center' });
+      currentX += rubricColWidths[2];
       
-      pdf.rect(currentX, yPos, summaryColWidths[3], 10, 'S');
-      // Large empty box for total marks
+      // Last column - NO fill, stroke only
+      pdf.rect(currentX, yPos, rubricColWidths[3], 12, 'S');
       
-      yPos += 25;
+      pdf.setTextColor(0, 0, 0);
+      yPos += 20;
       
-      // Evaluator Section
+      // Evaluator Section on Rubrics Page
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.text('EVALUATOR SECTION', leftCol, yPos);
-      yPos += 12;
+      yPos += 10;
       
-      // Evaluator details table
-      const evalColWidths = [40, 60];
+      // Evaluator details
+      const evalColWidths = [50, 80];
       currentX = leftCol;
       
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
+      pdf.setFontSize(10);
       
       // Evaluator Name
       pdf.text('Evaluator Name:', currentX, yPos);
       pdf.setLineWidth(0.3);
-      pdf.line(currentX + evalColWidths[0], yPos - 2, currentX + evalColWidths[0] + evalColWidths[1], yPos - 2);
-      yPos += 12;
+      pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
+      yPos += 10;
       
       // Date of Evaluation
       pdf.text('Date of Evaluation:', currentX, yPos);
-      pdf.line(currentX + evalColWidths[0], yPos - 2, currentX + evalColWidths[0] + evalColWidths[1], yPos - 2);
-      yPos += 12;
+      pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
+      yPos += 10;
       
       // Signature
       pdf.text('Evaluator Signature:', currentX, yPos);
-      pdf.line(currentX + evalColWidths[0], yPos - 2, currentX + evalColWidths[0] + evalColWidths[1], yPos - 2);
-      yPos += 20;
+      pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
+      yPos += 15;
       
       // Remarks section
       pdf.text('Overall Remarks:', leftCol, yPos);
-      yPos += 8;
+      yPos += 6;
       
-      const remarksHeight = 40;
+      const rubricRemarksHeight = 40;
       pdf.setLineWidth(0.3);
-      pdf.rect(leftCol, yPos, pageWidth - 2 * margin, remarksHeight);
+      pdf.rect(leftCol, yPos, pageWidth - 2 * margin, rubricRemarksHeight);
       
       // Add footer to each page
       const totalPages = pdf.getNumberOfPages();
