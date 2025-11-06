@@ -15,7 +15,6 @@ const Template = () => {
     title: 'Assignment 1',
     courseTitle: 'Python Programming',
     courseCode: '24UCS171',
-    class: 'B.Tech AI&DS',
     totalMarks: 40,
     questionsCount: 5,
     marksPerQuestion: 8
@@ -70,6 +69,7 @@ const Template = () => {
     name: '',
     rollNo: '',
     registrationNo: '',
+    department: '',
     submissionDate: new Date().toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
@@ -149,6 +149,7 @@ const Template = () => {
     if (!formData.name) newErrors.name = "Name is required";
     if (!formData.rollNo) newErrors.rollNo = "Roll number is required";
     if (!formData.registrationNo) newErrors.registrationNo = "Registration number is required";
+    if (!formData.department) newErrors.department = "Department is required";
     
     // Validate questions - all fields required
     questions.forEach((question) => {
@@ -172,6 +173,7 @@ const Template = () => {
     return formData.name && 
            formData.rollNo && 
            formData.registrationNo && 
+           formData.department &&
            questions.every(q => q.code.trim() && q.outputImage && q.justification.trim());
   };
 
@@ -273,8 +275,9 @@ const Template = () => {
       pdf.text(`${ASSIGNMENT_DETAILS.courseTitle} (${ASSIGNMENT_DETAILS.courseCode})`, pageWidth / 2, yPos, { align: 'center' });
       yPos += 6;
       
-      pdf.setFontSize(12);
-      pdf.text(ASSIGNMENT_DETAILS.class, pageWidth / 2, yPos, { align: 'center' });
+  pdf.setFontSize(12);
+  // ASSIGNMENT_DETAILS.class may be undefined — provide a safe fallback to avoid jsPDF errors
+  pdf.text(ASSIGNMENT_DETAILS.class || '', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
       
       // Student Details
@@ -307,8 +310,15 @@ const Template = () => {
       pdf.setFont('helvetica', 'bold');
       pdf.text('Date:', rightCol, yPos);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(formData.submissionDate, rightCol + labelWidth, yPos);
-      yPos += lineHeight + 5;
+  pdf.text(formData.submissionDate, rightCol + labelWidth, yPos);
+  yPos += lineHeight;
+
+  // Row 3: Department (only shown on the front/main page)
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Department:', leftCol, yPos);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(formData.department || '', leftCol + labelWidth, yPos);
+  yPos += lineHeight + 5;
       
       // Total Marks
       pdf.setFont('helvetica', 'bold');
@@ -411,190 +421,205 @@ const Template = () => {
       // Comprehensive Rubrics Page
       await addNewPage();
       yPos = margin + 35;
-      
+
       // Rubrics Header
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(16);
       pdf.setTextColor(0, 0, 139);
       pdf.text('MARKING RUBRICS', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
-      
-      // Student details on rubrics page
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      pdf.setTextColor(0, 0, 0);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Student Name: ', leftCol, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(formData.name, leftCol + 30, yPos);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Roll No: ', pageWidth - margin - 60, yPos);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(formData.rollNo, pageWidth - margin - 35, yPos);
-      yPos += 20;
-      
+
+
       // Comprehensive Rubrics Table for All Questions
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.text('DETAILED MARKING CRITERIA', leftCol, yPos);
       yPos += 12;
-      
+
       // Table structure: Question | Criteria | Max Marks | Obtained Marks
       const rubricColWidths = [15, 90, 25, 30];
       let currentX = leftCol;
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(9);
-      
-      // Table Headers
-      pdf.rect(currentX, yPos, rubricColWidths[0], 10, 'S');
-      pdf.text('Q.No', currentX + rubricColWidths[0]/2, yPos + 6.5, { align: 'center' });
-      currentX += rubricColWidths[0];
-      
-      pdf.rect(currentX, yPos, rubricColWidths[1], 10, 'S');
-      pdf.text('Criteria', currentX + 2, yPos + 6.5);
-      currentX += rubricColWidths[1];
-      
-      pdf.rect(currentX, yPos, rubricColWidths[2], 10, 'S');
-      pdf.text('Max', currentX + rubricColWidths[2]/2, yPos + 6.5, { align: 'center' });
-      currentX += rubricColWidths[2];
-      
-      pdf.rect(currentX, yPos, rubricColWidths[3], 10, 'S');
-      pdf.text('Obtained', currentX + rubricColWidths[3]/2, yPos + 6.5, { align: 'center' });
-      
-      yPos += 10;
-      
-      // Add rubrics for each question
+
+      // Rubric definitions
       const rubricCriteria = [
         'Code Implementation',
         'Output Screenshot',
         'Justification'
       ];
       const rubricMarks = [4, 2, 2];
-      
+
+      // Estimate layout and switch to compact mode if needed so the evaluator block fits
+      const usableHeight = pageHeight - margin - 30; // leave room for footer
+      const headerHeight = 15;
+      const studentDetailsHeight = 20;
+      const detailedHeaderHeight = 12;
+      const tableHeaderHeight = 10;
+      const perCriteriaRowHeight = 8;
+      const subtotalRowHeight = 8;
+      const perQuestionHeight = (perCriteriaRowHeight * rubricCriteria.length) + subtotalRowHeight;
+      const questionsHeight = perQuestionHeight * QUESTIONS.length;
+      const grandTotalHeight = 20;
+      const evaluatorEstimatedHeight = 110; // title + 3 lines + signature + remarks
+      const estimatedTotal = headerHeight + studentDetailsHeight + detailedHeaderHeight + tableHeaderHeight + questionsHeight + grandTotalHeight + evaluatorEstimatedHeight;
+      const compact = estimatedTotal > usableHeight;
+
+      // Adjust fonts/row heights for compact mode
+      const headerFontSize = compact ? 11 : 12;
+      const tableFontSize = compact ? 8 : 9;
+      const rowHeight = compact ? 7 : 8;
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(tableFontSize);
+
+      // Table Headers
+      pdf.rect(currentX, yPos, rubricColWidths[0], tableHeaderHeight, 'S');
+      pdf.text('Q.No', currentX + rubricColWidths[0]/2, yPos + tableHeaderHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
+      currentX += rubricColWidths[0];
+
+      pdf.rect(currentX, yPos, rubricColWidths[1], tableHeaderHeight, 'S');
+      pdf.text('Criteria', currentX + 2, yPos + tableHeaderHeight/2 + (compact ? 2 : 1.5));
+      currentX += rubricColWidths[1];
+
+      pdf.rect(currentX, yPos, rubricColWidths[2], tableHeaderHeight, 'S');
+      pdf.text('Max Marks', currentX + rubricColWidths[2]/2, yPos + tableHeaderHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
+      currentX += rubricColWidths[2];
+
+      pdf.rect(currentX, yPos, rubricColWidths[3], tableHeaderHeight, 'S');
+      pdf.text('Obtained', currentX + rubricColWidths[3]/2, yPos + tableHeaderHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
+
+      yPos += tableHeaderHeight;
+
       pdf.setFont('helvetica', 'normal');
-      
+      pdf.setFontSize(tableFontSize);
+
+      let grandTotal = 0;
+
+      // Add rubrics for each question (populate obtained marks from available student inputs)
       QUESTIONS.forEach((questionData, qIndex) => {
+        const studentQ = questions[qIndex] || { code: '', outputImage: null, justification: '' };
+        let questionSubtotal = 0;
+
         rubricCriteria.forEach((criteria, cIndex) => {
           currentX = leftCol;
-          
+
           // Question number (only show on first criteria row)
-          pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'S');
+          pdf.rect(currentX, yPos, rubricColWidths[0], rowHeight, 'S');
           if (cIndex === 0) {
             pdf.setFont('helvetica', 'bold');
-            pdf.text((qIndex + 1).toString(), currentX + rubricColWidths[0]/2, yPos + 5.5, { align: 'center' });
+            pdf.text((qIndex + 1).toString(), currentX + rubricColWidths[0]/2, yPos + rowHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
             pdf.setFont('helvetica', 'normal');
           }
           currentX += rubricColWidths[0];
-          
+
           // Criteria
-          pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'S');
-          pdf.text(criteria, currentX + 2, yPos + 5.5);
+          pdf.rect(currentX, yPos, rubricColWidths[1], rowHeight, 'S');
+          pdf.text(criteria, currentX + 2, yPos + rowHeight/2 + (compact ? 2 : 1.5));
           currentX += rubricColWidths[1];
-          
+
           // Max marks
-          pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'S');
-          pdf.text(rubricMarks[cIndex].toString(), currentX + rubricColWidths[2]/2, yPos + 5.5, { align: 'center' });
+          pdf.rect(currentX, yPos, rubricColWidths[2], rowHeight, 'S');
+          pdf.text(rubricMarks[cIndex].toString(), currentX + rubricColWidths[2]/2, yPos + rowHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
           currentX += rubricColWidths[2];
-          
-          // Obtained marks (empty for evaluator)
-          pdf.rect(currentX, yPos, rubricColWidths[3], 8, 'S');
-          
-          yPos += 8;
+
+          // Obtained marks column left intentionally empty (evaluators will fill these)
+          pdf.rect(currentX, yPos, rubricColWidths[3], rowHeight, 'S');
+
+          // Do NOT auto-fill obtained marks here. Leave questionSubtotal unchanged
+          // so that obtained/subtotal/grand total remain blank in the PDF.
+          yPos += rowHeight;
         });
-        
+
         // Question subtotal row
         currentX = leftCol;
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         pdf.setDrawColor(0, 0, 0);
         pdf.setFillColor(240, 240, 240);
-        
+
         // Draw filled rectangles for first 3 columns
-        pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'F');
+        pdf.rect(currentX, yPos, rubricColWidths[0], subtotalRowHeight, 'F');
         pdf.setLineWidth(0.3);
-        pdf.rect(currentX, yPos, rubricColWidths[0], 8, 'S');
+        pdf.rect(currentX, yPos, rubricColWidths[0], subtotalRowHeight, 'S');
         currentX += rubricColWidths[0];
-        
-        pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'F');
-        pdf.rect(currentX, yPos, rubricColWidths[1], 8, 'S');
-        pdf.text(`Question ${qIndex + 1} Total`, currentX + 2, yPos + 5.5);
+
+        pdf.rect(currentX, yPos, rubricColWidths[1], subtotalRowHeight, 'F');
+        pdf.rect(currentX, yPos, rubricColWidths[1], subtotalRowHeight, 'S');
+        pdf.text(`Question ${qIndex + 1} Total`, currentX + 2, yPos + subtotalRowHeight/2 + (compact ? 2 : 1.5));
         currentX += rubricColWidths[1];
-        
-        pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'F');
-        pdf.rect(currentX, yPos, rubricColWidths[2], 8, 'S');
-        pdf.text('8', currentX + rubricColWidths[2]/2, yPos + 5.5, { align: 'center' });
+
+        // Max marks (outline only) to avoid filled/black boxes in generated PDF
+        pdf.rect(currentX, yPos, rubricColWidths[2], subtotalRowHeight, 'S');
+        pdf.text((rubricMarks.reduce((a,b)=>a+b,0)).toString(), currentX + rubricColWidths[2]/2, yPos + subtotalRowHeight/2 + (compact ? 2 : 1.5), { align: 'center' });
         currentX += rubricColWidths[2];
-        
-        // Last column - NO fill, stroke only
-        pdf.rect(currentX, yPos, rubricColWidths[3], 8, 'S');
-        
+
+        // Last column - show obtained subtotal (left empty for evaluator)
+        pdf.rect(currentX, yPos, rubricColWidths[3], subtotalRowHeight, 'S');
         pdf.setFont('helvetica', 'normal');
-        yPos += 8;
+
+        // Do NOT write questionSubtotal here; keep evaluator column blank
+
+        // Keep grandTotal unmodified (we are not auto-filling obtained values)
+        // grandTotal += questionSubtotal; // intentionally not updating grandTotal
+        yPos += subtotalRowHeight;
       });
-      
+
       // Grand Total Row
       currentX = leftCol;
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11);
+      pdf.setFontSize(headerFontSize);
       pdf.setTextColor(0, 0, 0);
       pdf.setDrawColor(0, 0, 0);
       pdf.setFillColor(220, 220, 220);
-      
+
       // Draw filled rectangle for first two columns combined
       pdf.rect(currentX, yPos, rubricColWidths[0] + rubricColWidths[1], 12, 'F');
       pdf.setLineWidth(0.3);
       pdf.rect(currentX, yPos, rubricColWidths[0] + rubricColWidths[1], 12, 'S');
       pdf.text('GRAND TOTAL', currentX + 5, yPos + 8);
       currentX += rubricColWidths[0] + rubricColWidths[1];
-      
-      // Draw filled rectangle for max marks column
-      pdf.rect(currentX, yPos, rubricColWidths[2], 12, 'F');
+
+      // Max marks column (outline only - avoid fill to prevent black boxes)
       pdf.rect(currentX, yPos, rubricColWidths[2], 12, 'S');
-      pdf.text('40', currentX + rubricColWidths[2]/2, yPos + 8, { align: 'center' });
+      pdf.text( (ASSIGNMENT_DETAILS.totalMarks).toString(), currentX + rubricColWidths[2]/2, yPos + 8, { align: 'center' });
       currentX += rubricColWidths[2];
-      
-      // Last column - NO fill, stroke only
+
+      // Last column - display grand total obtained (left empty for evaluator)
       pdf.rect(currentX, yPos, rubricColWidths[3], 12, 'S');
-      
+      // Do NOT write grandTotal here; keep the Obtained grand total blank
+
       pdf.setTextColor(0, 0, 0);
       yPos += 20;
-      
+
       // Evaluator Section on Rubrics Page
+      // Ensure evaluator block fits — if compact mode triggered, layout already tightened
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(12);
       pdf.text('EVALUATOR SECTION', leftCol, yPos);
       yPos += 10;
-      
+
       // Evaluator details
       const evalColWidths = [50, 80];
       currentX = leftCol;
-      
+
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(10);
-      
+
       // Evaluator Name
       pdf.text('Evaluator Name:', currentX, yPos);
       pdf.setLineWidth(0.3);
       pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
       yPos += 10;
-      
+
       // Date of Evaluation
       pdf.text('Date of Evaluation:', currentX, yPos);
       pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
       yPos += 10;
-      
+
       // Signature
       pdf.text('Evaluator Signature:', currentX, yPos);
       pdf.line(currentX + evalColWidths[0], yPos - 1, currentX + evalColWidths[0] + evalColWidths[1], yPos - 1);
       yPos += 15;
-      
-      // Remarks section
-      pdf.text('Overall Remarks:', leftCol, yPos);
-      yPos += 6;
-      
+
       const rubricRemarksHeight = 40;
       pdf.setLineWidth(0.3);
       pdf.rect(leftCol, yPos, pageWidth - 2 * margin, rubricRemarksHeight);
@@ -631,6 +656,7 @@ const Template = () => {
       name: '',
       rollNo: '',
       registrationNo: '',
+      department: '',
       submissionDate: new Date().toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'long', 
@@ -674,7 +700,6 @@ const Template = () => {
                   <p className="text-blue-700 text-lg font-medium">{ASSIGNMENT_DETAILS.courseTitle}</p>
                   <div className="flex items-center mt-1 space-x-4">
                     <span className="text-gray-600 text-sm">Course Code: <span className="font-mono font-bold">{ASSIGNMENT_DETAILS.courseCode}</span></span>
-                    <span className="text-gray-600 text-sm">Class: <span className="font-bold">{ASSIGNMENT_DETAILS.class}</span></span>
                   </div>
                 </div>
               </div>
@@ -796,6 +821,39 @@ const Template = () => {
                   />
                   {errors.registrationNo && (
                     <p className="mt-2 text-sm text-red-600">{errors.registrationNo}</p>
+                  )}
+                </div>
+
+                {/* Department */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    className={`block w-full px-4 py-3 border ${errors.department ? 'border-red-400' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white`}
+                    required
+                  >
+                    <option value="">Select department</option>
+                    <option value="CSE A">CSE A</option>
+                    <option value="CSE B">CSE B</option>
+                    <option value="AIDS A">AIDS A</option>
+                    <option value="AIDS B">AIDS B</option>
+                    <option value="ECE A">ECE A</option>
+                    <option value="ECE B">ECE B</option>
+                    <option value="CYS">CYS</option>
+                    <option value="AIML A">AIML A</option>
+                    <option value="AIML B">AIML B</option>
+                    <option value="MECH">MECH</option>
+                    <option value="CSBS">CSBS</option>
+                    <option value="RA">RA</option>
+                    <option value="IT A">IT A</option>
+                    <option value="IT B">IT B</option>
+                  </select>
+                  {errors.department && (
+                    <p className="mt-2 text-sm text-red-600">{errors.department}</p>
                   )}
                 </div>
 
