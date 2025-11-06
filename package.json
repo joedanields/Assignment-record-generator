@@ -1,0 +1,28 @@
+{
+  "name": "pythodar-idea-portal",
+  "version": "1.0.0",
+  "description": "Pythodar Idea Submission Portal - React + Vite Application",
+  "scripts": {
+    "install": "cd Client && npm install",
+    "build": "cd Client && npm run build",
+    "dev": "cd Client && npm run dev",
+    "preview": "cd Client && npm run preview",
+    "lint": "cd Client && npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joedanields/Record_Generator_Custom.git"
+  },
+  "keywords": [
+    "react",
+    "vite",
+    "pythodar",
+    "idea-portal",
+    "pdf-generation"
+  ],
+  "author": "IPS Tech Community",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
