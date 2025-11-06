@@ -33,7 +33,7 @@ const Template = () => {
     {
       id: 2,
       title: "Box Volume Calculation",
-      description: "A piece of cardboard is cut and folded into an open-top box. The calculation of the final volume depends on following a precise sequence of steps. Write a program that takes the initial side length and the corner cut size as input, and then implements the following sequence of steps to find the volume:\n1. Receive the two inputs (initial_side and cut_size).\n2. Calculate Length and Width: $L = \\text{initial\\_side} - (2 \\times \\text{cut\\_size})$.\n3. Set Height $H = \\text{cut\\_size}$.\n4. Calculate Volume: $V = L \\times W \\times H$.",
+      description: "A piece of cardboard is cut and folded into an open-top box. The calculation of the final volume depends on following a precise sequence of steps. Write a program that takes the initial side length and the corner cut size as input, and then implements the following sequence of steps to find the volume:\n1. Receive the two inputs (initial_side and cut_size).\n2. Calculate Length and Width: L = initial_side - (2 × cut_size).\n3. Set Height H = cut_size.\n4. Calculate Volume: V = L × W × H.",
       concept: "Sequence",
       input: "Two lines of input, each containing a floating-point number: the initial side length and the cut size.",
       output: "Print the final box_volume clearly labeled and formatted to two decimal places."
@@ -57,9 +57,9 @@ const Template = () => {
     {
       id: 5,
       title: "Simple Interest Function",
-      description: "Define a reusable function named calculate_simple_interest that takes the Principal ($P$), Annual Rate ($R$), and Time in years ($T$) as arguments. The function must return the calculated simple interest ($I = P \\times R \\times T$). The main part of the program must take the values for $P, R,$ and $T$ as input from the user, call the defined function with the user's input, and print the result.",
+      description: "Define a reusable function named calculate_simple_interest that takes the Principal (P), Annual Rate (R), and Time in years (T) as arguments. The function must return the calculated simple interest (I = P × R × T). The main part of the program must take the values for P, R, and T as input from the user, call the defined function with the user's input, and print the result.",
       concept: "Functions",
-      input: "Three lines of input, each containing a floating-point number: Principal ($P$), Annual Rate ($R$), and Time in years ($T$).",
+      input: "Three lines of input, each containing a floating-point number: Principal (P), Annual Rate (R), and Time in years (T).",
       output: "A single line of output showing the calculated interest, clearly labeled and formatted to two decimal places."
     }
   ];
